@@ -1,0 +1,205 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Dec 26 08:30:41 2020
+
+@author: ALOJYOTI
+"""
+
+import random
+import sys
+
+def find_ip_class(ip_octets, mask_octets):
+    print("\n")    
+    if (int(mask_octets[0]) == 255) and (int(mask_octets[1]) == 0) and (1<= int(ip_octets[0])<= 126):
+        if (int(ip_octets[0]) == 10):
+            print("This is a CLASS-A PRIVATE IP ADDRESS")
+        else:
+            print("This is a CLASS-A PUBLIC IP ADDRESS")
+            
+    elif (int(mask_octets[1]) == 240) and (int(mask_octets[2]) == 0) and (int(ip_octets[0]) == 172) and (16 <= int(ip_octets[1]) <= 31):
+        print("This is a CLASS-B PRIVATE IP ADDRESS")
+        
+    elif (int(mask_octets[1]) == 255) and (int(mask_octets[2]) == 0) and (int(ip_octets[0]) == 192) and (int(ip_octets[1]) == 168):
+       print("This is a CLASS-C PRIVATE IP ADDRESS") 
+       
+    elif(int(mask_octets[1]) == 255) and (int(mask_octets[2]) == 0) and (128 <= int(ip_octets[0]) <= 191):
+       print("This is a CLASS-B PUBLIC IP ADDRESS") 
+       
+    elif(int(mask_octets[2]) == 255) and (int(mask_octets[3]) == 0) and (192 <= int(ip_octets[0]) <= 223):
+        print("This is a CLASS-C PUBLIC IP ADDRESS") 
+        
+    else:
+        print("You have entered a CLASSLESS IP ADDRESS")  
+        
+        
+def vailidating_ip_address():
+    
+    try:
+        #print("\n")
+        #Checking IP address validity
+        while True:
+            ip_address = input("Enter an IP address: ")
+            if(ip_address.find('/') != -1):
+                address,prefix = ip_address.split('/')
+            else:
+                address,prefix = ip_address, " "
+            
+            #Checking octets            
+            ip_octets = address.split('.')
+                        
+            if (len(ip_octets) == 4) and (1 <= int(ip_octets[0]) <= 223) and (int(ip_octets[0]) != 127) and (int(ip_octets[0]) != 169 or int(ip_octets[1]) != 254) and (0 <= int(ip_octets[1]) <= 255 and 0 <= int(ip_octets[2]) <= 255 and 0 <= int(ip_octets[3]) <= 255):
+                
+                return ip_octets, prefix, address
+                break
+            else:
+                print("\nThe IP address is INVALID! Please retry! eg:X.X.X.X OR X.X.X.X/X\n")
+                continue
+            
+    except KeyboardInterrupt:
+        print("\n\nProgram aborted by user. Exiting...\n")
+        sys.exit()
+            
+def validate_subnet_mask(ip_octets, prefix = " "):  
+    
+    try:
+        masks = [255, 254, 252, 248, 240, 224, 192, 128, 0]
+        bin_mask_octets =[]
+
+        if (prefix == " "):
+            prefix = input("Enter prefix/subnet mask: ")
+        
+        if (prefix.find('.') != -1): 
+            #checking subnet mask validity
+            subnet_mask = prefix
+                      
+            mask_octets = subnet_mask.split('.')
+        
+            if (len(mask_octets) == 4) and (int(mask_octets[0]) in masks) and (int(mask_octets[1]) in masks) and (int(mask_octets[2]) in masks) and (int(mask_octets[3]) in masks) and (int(mask_octets[0]) >= int(mask_octets[1]) >= int(mask_octets[2]) >= int(mask_octets[3])):
+                for octet in mask_octets:
+                    bin_mask_octets.append((bin(int(octet)).lstrip("0b")).zfill(8))
+                    #print(bin_mask_octets)
+                binary_mask = "".join(map(str,bin_mask_octets))
+                prefix = binary_mask.count("1")
+                find_ip_class(ip_octets, mask_octets)
+            else:
+                print("\nThe subnet mask is INVALID! Please retry! eg: X.X.X.X OR /X OR X  \n")
+                prefix = " "
+                validate_subnet_mask(prefix)
+
+        else: 
+            #checking valid PREFIX
+            prefix = prefix.lstrip("/")
+            if ( 0 <= int(prefix) <= 32):
+                #decimal to DOTED DECIMAL PREFIX
+                binary_mask = "1" * int(prefix) + "0" * (32-int(prefix))
+                mask_octets = []
+                for bit in range(0, 32, 8):
+                    bin_mask_octet = binary_mask[bit: bit + 8]
+                    mask_octets.append(str(int(bin_mask_octet, 2)))
+
+                subnet_mask = ".".join(mask_octets)
+#                print (ip_octets, mask_octets)
+                find_ip_class(ip_octets, mask_octets)
+            else:
+               print("\nThe subnet mask is INVALID! Please retry! eg: /X OR X OR X.X.X.X\n")
+               prefix =" "
+               validate_subnet_mask()
+        return mask_octets, subnet_mask, prefix       
+               
+    except KeyboardInterrupt:
+        print("\n\nProgram aborted by user. Exiting...\n")
+        sys.exit()
+        
+def find_nw_and_bc_id(ip_octets, mask_octets):
+    
+    wildcard_octet, net_ip_address, bst_ip_address = [], [], []
+    
+    try:
+        for index_ip,octet_ip in enumerate(ip_octets):
+            for index_mask,octet_mask in enumerate(mask_octets):
+                if index_ip == index_mask:
+                    net_ip_address.append(int(octet_ip) & int(octet_mask))
+                    bst_ip_address.append(int(octet_ip) | abs(255 - int(octet_mask)))
+                    wildcard_octet.append(255 - int(octet_mask))
+                
+        network_address = ".".join(map(str,net_ip_address))
+        broadcast_address= ".".join(map(str,bst_ip_address))
+        wildcard_mask = ".".join(map(str,wildcard_octet))
+#        print (type(broadcast_address))
+        
+        return network_address, broadcast_address, wildcard_mask, net_ip_address, bst_ip_address
+
+        
+    except KeyboardInterrupt:
+        print("\n\nProgram aborted by user. Exiting...\n")
+        sys.exit()
+        
+def generate_random_ip_within_subnet(net_ip_address, bst_ip_address):
+
+    try:
+        #Generation of random IP addresses in the subnet
+        while True:
+            generate = input("Generate random IP address from this subnet? (y/n)")
+            
+            if generate == "y":
+                generated_ip = []
+                
+                #Obtain available IP address in range, based on the difference between octets in broadcast address and network address
+                for indexb, oct_bst in enumerate(bst_ip_address):
+                    for indexn, oct_net in enumerate(net_ip_address):
+                        if indexb == indexn:
+                            if oct_bst == oct_net:
+                                generated_ip.append(str(oct_net))
+                            elif indexb == 3:
+                                generated_ip.append(str(random.randint(oct_net+1, oct_bst-1)))
+                            else:
+                                generated_ip.append(str(random.randint(oct_net, oct_bst)))
+                
+                #IP address generated from the subnet pool
+                y_iaddr = ".".join(generated_ip)
+
+                print("Random IP address is: %s" % y_iaddr)
+                print("\n")
+                continue   
+            else:
+                print("Ok, bye!\n")
+                break
+        
+    except KeyboardInterrupt:
+        print("\n\nProgram aborted by user. Exiting...\n")
+        sys.exit()
+        
+
+def subnet_calc():
+    try:
+        ip_octets, mask_octets, net_ip_address, bst_ip_address = [], [], [], []
+        prefix, subnet_mask, address = " ", " ", " "   
+        
+        ip_octets, prefix, address = vailidating_ip_address()
+        #print (prefix)
+        mask_octets, subnet_mask, prefix = validate_subnet_mask(ip_octets, prefix)
+        network_address, broadcast_address, wildcard_mask, net_ip_address, bst_ip_address = find_nw_and_bc_id(ip_octets, mask_octets)
+        #Results for selected IP/mask
+        print("\n")
+        print("Network address is: " + network_address)
+        print("Broadcast address is: " + broadcast_address)
+        print("Subnet mask: " + subnet_mask)
+        print("Wildcard mask: " + wildcard_mask)
+        print("Mask bits: " + str(prefix))
+        print("Number of valid hosts per subnet: " + str(abs((2**(32-int(prefix)))-2)))
+        print("\n")    
+        generate_random_ip_within_subnet(net_ip_address, bst_ip_address)
+    
+    except KeyboardInterrupt:
+        print("\n\nProgram aborted by user. Exiting...\n")
+        sys.exit()
+        
+try:
+    subnet_calc()
+except KeyboardInterrupt:
+    print("\n\nProgram aborted by user. Exiting...\n")
+    sys.exit()    
+
+
+
+
