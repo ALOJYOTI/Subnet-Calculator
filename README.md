@@ -12,4 +12,4 @@ OUTPUT:
 ✨Number of valid host in that subnet
 ✨Class of IP address
 
-😊Also this program will generate random ip Address from that subnet
+😊Also this program generates random ip Address from that subnet
